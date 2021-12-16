@@ -6,38 +6,18 @@ package io.flutter.plugins.webviewflutter;
 
 import android.webkit.WebSettings;
 import android.webkit.WebView;
-import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.WebSettingsHostApi;
 
-/**
- * Host api implementation for {@link WebSettings}.
- *
- * <p>Handles creating {@link WebSettings}s that intercommunicate with a paired Dart object.
- */
-public class WebSettingsHostApiImpl implements WebSettingsHostApi {
+class WebSettingsHostApiImpl implements GeneratedAndroidWebView.WebSettingsHostApi {
   private final InstanceManager instanceManager;
   private final WebSettingsCreator webSettingsCreator;
 
-  /** Handles creating {@link WebSettings} for a {@link WebSettingsHostApiImpl}. */
-  public static class WebSettingsCreator {
-    /**
-     * Creates a {@link WebSettings}.
-     *
-     * @param webView the {@link WebView} which the settings affect
-     * @return the created {@link WebSettings}
-     */
-    public WebSettings createWebSettings(WebView webView) {
+  static class WebSettingsCreator {
+    WebSettings createWebSettings(WebView webView) {
       return webView.getSettings();
     }
   }
 
-  /**
-   * Creates a host API that handles creating {@link WebSettings} and invoke its methods.
-   *
-   * @param instanceManager maintains instances stored to communicate with Dart objects
-   * @param webSettingsCreator handles creating {@link WebSettings}s
-   */
-  public WebSettingsHostApiImpl(
-      InstanceManager instanceManager, WebSettingsCreator webSettingsCreator) {
+  WebSettingsHostApiImpl(InstanceManager instanceManager, WebSettingsCreator webSettingsCreator) {
     this.instanceManager = instanceManager;
     this.webSettingsCreator = webSettingsCreator;
   }
@@ -50,7 +30,7 @@ public class WebSettingsHostApiImpl implements WebSettingsHostApi {
 
   @Override
   public void dispose(Long instanceId) {
-    instanceManager.removeInstanceWithId(instanceId);
+    instanceManager.removeInstance(instanceId);
   }
 
   @Override

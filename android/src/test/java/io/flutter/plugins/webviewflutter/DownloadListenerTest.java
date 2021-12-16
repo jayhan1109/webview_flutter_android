@@ -6,13 +6,11 @@ package io.flutter.plugins.webviewflutter;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.verify;
 
 import android.webkit.DownloadListener;
 import io.flutter.plugins.webviewflutter.DownloadListenerHostApiImpl.DownloadListenerCreator;
-import io.flutter.plugins.webviewflutter.DownloadListenerHostApiImpl.DownloadListenerImpl;
+import io.flutter.plugins.webviewflutter.GeneratedAndroidWebView.DownloadListenerFlutterApi;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -23,49 +21,45 @@ import org.mockito.junit.MockitoRule;
 public class DownloadListenerTest {
   @Rule public MockitoRule mockitoRule = MockitoJUnit.rule();
 
-  @Mock public DownloadListenerFlutterApiImpl mockFlutterApi;
+  @Mock public DownloadListenerFlutterApi mockFlutterApi;
 
-  InstanceManager instanceManager;
-  DownloadListenerHostApiImpl hostApiImpl;
-  DownloadListenerImpl downloadListener;
+  InstanceManager testInstanceManager;
+  DownloadListenerHostApiImpl testHostApiImpl;
+  DownloadListener testDownloadListener;
 
   @Before
   public void setUp() {
-    instanceManager = new InstanceManager();
+    testInstanceManager = new InstanceManager();
 
     final DownloadListenerCreator downloadListenerCreator =
         new DownloadListenerCreator() {
           @Override
-          public DownloadListenerImpl createDownloadListener(
-              DownloadListenerFlutterApiImpl flutterApi) {
-            downloadListener = super.createDownloadListener(flutterApi);
-            return downloadListener;
+          DownloadListener createDownloadListener(
+              Long instanceId, DownloadListenerFlutterApi downloadListenerFlutterApi) {
+            testDownloadListener =
+                super.createDownloadListener(instanceId, downloadListenerFlutterApi);
+            return testDownloadListener;
           }
         };
 
-    hostApiImpl =
-        new DownloadListenerHostApiImpl(instanceManager, downloadListenerCreator, mockFlutterApi);
-    hostApiImpl.create(0L);
+    testHostApiImpl =
+        new DownloadListenerHostApiImpl(
+            testInstanceManager, downloadListenerCreator, mockFlutterApi);
+    testHostApiImpl.create(0L);
   }
 
   @Test
   public void postMessage() {
-    downloadListener.onDownloadStart(
+    testDownloadListener.onDownloadStart(
         "https://www.google.com", "userAgent", "contentDisposition", "mimetype", 54);
     verify(mockFlutterApi)
         .onDownloadStart(
-            eq(downloadListener),
+            eq(0L),
             eq("https://www.google.com"),
             eq("userAgent"),
             eq("contentDisposition"),
             eq("mimetype"),
             eq(54L),
             any());
-
-    reset(mockFlutterApi);
-    downloadListener.release();
-    downloadListener.onDownloadStart("", "", "", "", 23);
-    verify(mockFlutterApi, never())
-        .onDownloadStart((DownloadListener) any(), any(), any(), any(), any(), eq(23), any());
   }
 }

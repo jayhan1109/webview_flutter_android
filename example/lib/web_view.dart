@@ -15,7 +15,7 @@ import 'navigation_request.dart';
 
 /// Optional callback invoked when a web view is first created. [controller] is
 /// the [WebViewController] for the created web view.
-typedef WebViewCreatedCallback = void Function(WebViewController controller);
+typedef void WebViewCreatedCallback(WebViewController controller);
 
 /// Decides how to handle a specific navigation request.
 ///
@@ -23,20 +23,20 @@ typedef WebViewCreatedCallback = void Function(WebViewController controller);
 /// `navigation` should be handled.
 ///
 /// See also: [WebView.navigationDelegate].
-typedef NavigationDelegate = FutureOr<NavigationDecision> Function(
+typedef FutureOr<NavigationDecision> NavigationDelegate(
     NavigationRequest navigation);
 
 /// Signature for when a [WebView] has started loading a page.
-typedef PageStartedCallback = void Function(String url);
+typedef void PageStartedCallback(String url);
 
 /// Signature for when a [WebView] has finished loading a page.
-typedef PageFinishedCallback = void Function(String url);
+typedef void PageFinishedCallback(String url);
 
 /// Signature for when a [WebView] is loading a page.
-typedef PageLoadingCallback = void Function(int progress);
+typedef void PageLoadingCallback(int progress);
 
 /// Signature for when a [WebView] has failed to load a resource.
-typedef WebResourceErrorCallback = void Function(WebResourceError error);
+typedef void WebResourceErrorCallback(WebResourceError error);
 
 /// A web view widget for showing html content.
 ///
@@ -76,16 +76,28 @@ class WebView extends StatefulWidget {
     this.initialMediaPlaybackPolicy =
         AutoMediaPlaybackPolicy.require_user_action_for_all_media_types,
     this.allowsInlineMediaPlayback = false,
-    this.backgroundColor,
   })  : assert(javascriptMode != null),
         assert(initialMediaPlaybackPolicy != null),
         assert(allowsInlineMediaPlayback != null),
         super(key: key);
 
+  static WebViewPlatform _platform = AndroidWebView();
+
   /// The WebView platform that's used by this WebView.
   ///
   /// The default value is [AndroidWebView].
-  static WebViewPlatform platform = AndroidWebView();
+  static WebViewPlatform get platform => _platform;
+
+  /// Sets a custom [WebViewPlatform].
+  ///
+  /// This property can be set to use a custom platform implementation for WebViews.
+  ///
+  /// Setting `platform` doesn't affect [WebView]s that were already created.
+  ///
+  /// The default value is [AndroidWebView] on Android and [CupertinoWebView] on iOS.
+  static set platform(WebViewPlatform platform) {
+    _platform = platform;
+  }
 
   /// If not null invoked once the web view is created.
   final WebViewCreatedCallback? onWebViewCreated;
@@ -237,12 +249,6 @@ class WebView extends StatefulWidget {
   /// The default policy is [AutoMediaPlaybackPolicy.require_user_action_for_all_media_types].
   final AutoMediaPlaybackPolicy initialMediaPlaybackPolicy;
 
-  /// The background color of the [WebView].
-  ///
-  /// When `null` the platform's webview default background color is used. By
-  /// default [backgroundColor] is `null`.
-  final Color? backgroundColor;
-
   @override
   _WebViewState createState() => _WebViewState();
 }
@@ -275,7 +281,7 @@ class _WebViewState extends State<WebView> {
       context: context,
       onWebViewPlatformCreated:
           (WebViewPlatformController? webViewPlatformController) {
-        final WebViewController controller = WebViewController(
+        WebViewController controller = WebViewController(
           widget,
           webViewPlatformController!,
           _javascriptChannelRegistry,
@@ -294,7 +300,6 @@ class _WebViewState extends State<WebView> {
             _javascriptChannelRegistry.channels.keys.toSet(),
         autoMediaPlaybackPolicy: widget.initialMediaPlaybackPolicy,
         userAgent: widget.userAgent,
-        backgroundColor: widget.backgroundColor,
       ),
       javascriptChannelRegistry: _javascriptChannelRegistry,
     );
@@ -340,7 +345,6 @@ class _PlatformCallbacksHandler implements WebViewPlatformCallbacksHandler {
     }
   }
 
-  @override
   void onWebResourceError(WebResourceError error) {
     if (_webView.onWebResourceError != null) {
       _webView.onWebResourceError!(error);
@@ -370,28 +374,6 @@ class WebViewController {
   late WebSettings _settings;
 
   WebView _widget;
-
-  /// Loads the file located on the specified [absoluteFilePath].
-  ///
-  /// The [absoluteFilePath] parameter should contain the absolute path to the
-  /// file as it is stored on the device. For example:
-  /// `/Users/username/Documents/www/index.html`.
-  ///
-  /// Throws an ArgumentError if the [absoluteFilePath] does not exist.
-  Future<void> loadFile(String absoluteFilePath) {
-    return _webViewPlatformController.loadFile(absoluteFilePath);
-  }
-
-  /// Loads the supplied HTML string.
-  ///
-  /// The [baseUrl] parameter is used when resolving relative URLs within the
-  /// HTML string.
-  Future<void> loadHtmlString(String html, {String? baseUrl}) {
-    return _webViewPlatformController.loadHtmlString(
-      html,
-      baseUrl: baseUrl,
-    );
-  }
 
   /// Loads the specified URL.
   ///
@@ -598,7 +580,7 @@ class WebViewController {
     bool? hasNavigationDelegate;
     bool? hasProgressTracking;
     bool? debuggingEnabled;
-    WebSetting<String?> userAgent = const WebSetting<String?>.absent();
+    WebSetting<String?> userAgent = WebSetting.absent();
     bool? zoomEnabled;
     if (currentValue.javascriptMode != newValue.javascriptMode) {
       javascriptMode = newValue.javascriptMode;
